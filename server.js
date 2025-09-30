@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import authRoutes from "./src/routes/auth.js";
+import projectRoutes from "./src/routes/projects.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
@@ -16,5 +17,6 @@ app.use(
 
 app.use(express.json());
 app.use(cookieParser());
+app.use("/api/projects", projectRoutes);
 app.use("/api/auth/", authRoutes);
 app.listen(8800, () => console.log("API on :8800"));

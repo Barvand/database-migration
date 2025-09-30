@@ -1,6 +1,6 @@
 import { db } from "../../connect.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 export const register = (req, res) => {
   // Check if user exists
@@ -17,13 +17,14 @@ export const register = (req, res) => {
     const hashPassword = bcrypt.hashSync(req.body.password, salt);
 
     const q =
-      "INSERT INTO users(`username`,`email`,`password`,`name`) VALUES (?)";
+      "INSERT INTO users(`username`,`email`,`password`,`name`, `role`) VALUES (?)";
 
     const values = [
       req.body.username,
       req.body.email,
       hashPassword,
       req.body.name,
+      req.body.role,
     ];
     db.query(q, [values], (err, data) => {
       if (err) return res.status(500).json({ error: err.message });
