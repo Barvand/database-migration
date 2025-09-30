@@ -14,6 +14,7 @@ app.use(
     credentials: true,
   })
 );
+app.get("/api/health", async (_req, res) => res.json({ ok: true }));
 
 app.use(express.json());
 app.use(cookieParser());
