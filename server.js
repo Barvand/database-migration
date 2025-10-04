@@ -12,6 +12,7 @@ app.use(
     origin: "https://manhours.netlify.app",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.get("/api/health", async (_req, res) => res.json({ ok: true }));
