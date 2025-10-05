@@ -20,7 +20,7 @@ const RegisterSchema = z.object({
     .regex(/[a-z]/, "Password needs a lowercase letter")
     .regex(/[0-9]/, "Password needs a number"),
   name: z.string().trim().min(1, "Name is required").max(100),
-  role: z.enum(["user", "admin"]), // whatever roles you allow
+  role: z.enum(["employee", "admin", "accountant"]).default("employee"), // whatever roles you allow
 });
 
 // 2) Use the schema in your handler
