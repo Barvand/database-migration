@@ -115,7 +115,10 @@ export const login = (req, res) => {
       .cookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production", // only over HTTPS
-        sameSite: "none",
+        sameSite: "none", // required for cross-site
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // optional: 7 days
+        partitioned: true, // <- add if cookie is used in third-party context (Chrome)
       })
       .status(200)
       .json({ message: "Login successful", user: safeUser });
