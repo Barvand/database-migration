@@ -6,13 +6,14 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(
   cors({
     origin: "https://manhours.netlify.app",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-     allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.get("/api/health", async (_req, res) => res.json({ ok: true }));
