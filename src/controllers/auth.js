@@ -102,7 +102,7 @@ export const login = (req, res) => {
       return res.status(400).json({ message: "Invalid email or password!" });
 
     // 4) Sign JWT securely (use env variable, not a hardcoded key)
-    const secret = process.env.JWT_SECRET;
+    const secret = env.JWT_SECRET;
     if (!secret) {
       return res
         .status(500)
@@ -111,7 +111,6 @@ export const login = (req, res) => {
     const token = jwt.sign({ id: user.id, role: user.role }, secret, {
       expiresIn: "7d",
     });
-
 
     const { password: _, ...safeUser } = user;
 
@@ -122,7 +121,7 @@ export const login = (req, res) => {
         sameSite: "none", // required for cross-site
         secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // optional: 7 days
-        partitioned: true, // <- add if cookie is used in third-party context (Chrome)
+        
       })
       .status(200)
       .json({ message: "Login successful", user: safeUser });
