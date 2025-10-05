@@ -118,7 +118,7 @@ export const login = (req, res) => {
       .cookie("access_token", token, {
         httpOnly: true,
         sameSite: "none", // required for cross-site
-        secure: true,
+        secure: process.env.NODE_ENV === "production", // only over
         maxAge: 7 * 24 * 60 * 60 * 1000, // optional: 7 days
       })
       .status(200)
