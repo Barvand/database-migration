@@ -114,14 +114,12 @@ export const login = (req, res) => {
 
     const { password: _, ...safeUser } = user;
 
-    // 5) Send cookie and user data
     res
       .cookie("access_token", token, {
         httpOnly: true,
         sameSite: "none", // required for cross-site
         secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // optional: 7 days
-        
       })
       .status(200)
       .json({ message: "Login successful", user: safeUser });
