@@ -101,13 +101,6 @@ export const login = (req, res) => {
     if (!passwordMatch)
       return res.status(400).json({ message: "Invalid email or password!" });
 
-    // 4) Sign JWT securely (use env variable, not a hardcoded key)
-    const secret = env.JWT_SECRET;
-    if (!secret) {
-      return res
-        .status(500)
-        .json({ message: "Server misconfigured: JWT_SECRET missing" });
-    }
     const token = jwt.sign({ id: data[0].id }, "secretkey");
 
     const { password: _, ...safeUser } = user;
