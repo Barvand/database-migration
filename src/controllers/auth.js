@@ -116,8 +116,6 @@ export const login = (req, res) => {
         httpOnly: true,
         sameSite: "none", // required for cross-site
         secure: true,
-        path: "/", // good practice
-        // domain: ".yourdomain.com", // only if you need subdomains
         maxAge: 7 * 24 * 60 * 60 * 1000, // optional: 7 days
         partitioned: true, // <- add if cookie is used in third-party context (Chrome)
       })
