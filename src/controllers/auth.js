@@ -112,6 +112,7 @@ export const login = (req, res) => {
       expiresIn: "7d",
     });
 
+
     const { password: _, ...safeUser } = user;
 
     // 5) Send cookie and user data
