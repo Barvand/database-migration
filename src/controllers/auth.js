@@ -108,8 +108,7 @@ export const login = (req, res) => {
         .status(500)
         .json({ message: "Server misconfigured: JWT_SECRET missing" });
     }
-    const token = jwt.sign({ id: user.id, role: user.role }, secret, {
-      expiresIn: "7d",
+    const token = jwt.sign({ id: data[0].id }, "secretkey");
     });
 
     const { password: _, ...safeUser } = user;
