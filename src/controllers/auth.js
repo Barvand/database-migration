@@ -1,68 +1,119 @@
 import { db } from "../../connect.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
 
+// 1) Define your schema
+const RegisterSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, "Username must be at least 3 chars")
+    .max(30, "Username must be at most 30 chars")
+    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores"),
+  email: z.string().trim().toLowerCase().email("Invalid email"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 chars")
+    // add your policy here:
+    .regex(/[A-Z]/, "Password needs an uppercase letter")
+    .regex(/[a-z]/, "Password needs a lowercase letter")
+    .regex(/[0-9]/, "Password needs a number"),
+  name: z.string().trim().min(1, "Name is required").max(100),
+  role: z.enum(["user", "admin"]), // whatever roles you allow
+});
+
+// 2) Use the schema in your handler
 export const register = (req, res) => {
-  // Check if user exists
-  const q = "SELECT * FROM users WHERE username = ?";
+  // Validate + transform
+  const parsed = RegisterSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) => ({
+      field: i.path.join("."),
+      message: i.message,
+    }));
+    return res
+      .status(400)
+      .json({ message: "Validation failed", errors: issues });
+  }
 
-  db.query(q, [req.body.username], (err, data) => {
-    if (err) return res.status(500).json(err);
-    if (data.length)
-      return res.status(409).json({ message: "User already exists!" });
+  // Safely use parsed + transformed data
+  const { username, email, password, name, role } = parsed.data;
 
-    // Create A New user
-    //  Hash the password
+  // (Optional) sanitize for XSS if you ever render these values in HTML later.
+  // e.g., using validator or sanitize-html. Zod doesn't sanitize HTML.
+  // const cleanName = sanitizeHtml(name, { allowedTags: [], allowedAttributes: {} });
+
+  const qCheck = "SELECT 1 FROM users WHERE username = ? OR email = ? LIMIT 1";
+  db.query(qCheck, [username, email], (err, data) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (data.length) {
+      return res
+        .status(409)
+        .json({ message: "Username or email already exists" });
+    }
+
     const salt = bcrypt.genSaltSync(10);
-    const hashPassword = bcrypt.hashSync(req.body.password, salt);
+    const hashPassword = bcrypt.hashSync(password, salt);
 
-    const q =
-      "INSERT INTO users(`username`,`email`,`password`,`name`, `role`) VALUES (?)";
+    const qInsert =
+      "INSERT INTO users(`username`,`email`,`password`,`name`,`role`) VALUES (?)";
+    const values = [username, email, hashPassword, name, role];
 
-    const values = [
-      req.body.username,
-      req.body.email,
-      hashPassword,
-      req.body.name,
-      req.body.role,
-    ];
-    db.query(q, [values], (err, data) => {
+    db.query(qInsert, [values], (err) => {
       if (err) return res.status(500).json({ error: err.message });
-
       return res.status(200).json({ message: "User has been created." });
     });
   });
 };
 
 export const login = (req, res) => {
-  // Logic for user login
+  // 2) Validate input
+  const parsed = LoginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) => ({
+      field: i.path.join("."),
+      message: i.message,
+    }));
+    return res
+      .status(400)
+      .json({ message: "Validation failed", errors: issues });
+  }
 
+  const { email, password } = parsed.data;
+
+  // 3) Check user by email
   const q = "SELECT * FROM users WHERE email = ?";
-
-  db.query(q, [req.body.email], (err, data) => {
-    if (err) return res.status(500).json(err);
+  db.query(q, [email], (err, data) => {
+    if (err) return res.status(500).json({ error: err.message });
     if (data.length === 0) {
       return res.status(404).json({ message: "User not found!" });
     }
 
-    const checkPassword = bcrypt.compareSync(
-      req.body.password,
-      data[0].password
+    const user = data[0];
+    const passwordMatch = bcrypt.compareSync(password, user.password);
+
+    if (!passwordMatch)
+      return res.status(400).json({ message: "Invalid email or password!" });
+
+    // 4) Sign JWT securely (use env variable, not a hardcoded key)
+    const token = jwt.sign(
+      { id: user.id, role: user.role }, // include role if needed
+      process.env.JWT_SECRET || "fallback_secret",
+      { expiresIn: "7d" }
     );
 
-    if (!checkPassword)
-      return res.status(400).json({ message: "Wrong username or password!" });
+    const { password: _, ...safeUser } = user;
 
-    const token = jwt.sign({ id: data[0].id }, "secretkey");
-
-    const { password, ...others } = data[0];
-
+    // 5) Send cookie and user data
     res
       .cookie("access_token", token, {
         httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // only over HTTPS
+        sameSite: "strict",
       })
       .status(200)
-      .json(others);
+      .json({ message: "Login successful", user: safeUser });
   });
 };
 
