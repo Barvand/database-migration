@@ -67,6 +67,11 @@ export const register = (req, res) => {
   });
 };
 
+const LoginSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Invalid email format"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 export const login = (req, res) => {
   // 2) Validate input
   const parsed = LoginSchema.safeParse(req.body);
