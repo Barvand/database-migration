@@ -115,7 +115,7 @@ export const login = (req, res) => {
       .cookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production", // only over HTTPS
-        sameSite: "strict",
+        sameSite: "none",
       })
       .status(200)
       .json({ message: "Login successful", user: safeUser });
