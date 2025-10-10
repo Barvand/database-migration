@@ -1,9 +1,9 @@
 // routes/projects.js
 import express from "express";
+import { auth } from "../middleware/auth.js";
 import {
-  auth,
-  getProjects,
-  getProjectById,
+  GetProjects,
+  GetProjectById,
   addProject,
   updateProject,
   deleteProject,
@@ -12,11 +12,11 @@ import {
 
 const router = express.Router();
 
-router.get("/", auth, getProjects);
+router.get("/", auth, GetProjects);
 router.get("/active", auth, getActiveProjects);
-router.get("/:id", auth, getProjectById);
+router.get("/:id", auth, GetProjectById);
 router.post("/", auth, addProject);
-router.patch("/:id", auth, updateProject);
+router.put("/:id", auth, updateProject);
 router.delete("/:id", auth, deleteProject);
 
 export default router;
