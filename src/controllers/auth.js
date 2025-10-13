@@ -47,7 +47,7 @@ function signRefreshToken(payload) {
 function setRefreshCookie(res, refreshToken) {
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
-    secure: IS_PROD, // true in prod (HTTPS required)
+    secure: true, // true in prod (HTTPS required)
     sameSite: 'none', // use "none" only if cross-site
     path: "api/auth/refresh", // restrict path to auth routes
     maxAge: REFRESH_TTL_MS,
