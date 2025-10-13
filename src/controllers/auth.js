@@ -162,7 +162,7 @@ export const refresh = (req, res) => {
 export const logout = (req, res) => {
   res.clearCookie("refresh_token", {
     httpOnly: true,
-    secure: IS_PROD,
+    secure: true, 
     sameSite:"none",
     path: "api/auth/refresh",
   });
