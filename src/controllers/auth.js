@@ -48,7 +48,7 @@ function setRefreshCookie(res, refreshToken) {
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
     secure: IS_PROD, // true in prod (HTTPS required)
-    sameSite: IS_PROD ? "lax" : "lax", // use "none" only if cross-site
+    sameSite: 'none', // use "none" only if cross-site
     path: "api/auth/refresh", // restrict path to auth routes
     maxAge: REFRESH_TTL_MS,
   });
@@ -163,7 +163,7 @@ export const logout = (req, res) => {
   res.clearCookie("refresh_token", {
     httpOnly: true,
     secure: IS_PROD,
-    sameSite: IS_PROD ? "lax" : "lax",
+    sameSite:"none",
     path: "api/auth/refresh",
   });
   return res.status(200).json({ message: "Logged out" });
