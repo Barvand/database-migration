@@ -6,7 +6,6 @@ import hoursRoutes from "./src/routes/hours.js";
 import reportsRoutes from "./src/routes/reports.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import express from "express";
 import { requestLogger } from "./middleware/logger.js";
 
 
