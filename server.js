@@ -30,4 +30,4 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/auth/", authRoutes);
 app.use("/api/hours", hoursRoutes);
 app.use("/api/reports", reportsRoutes);
-app.listen(8800, () => console.log("API on :8000"));
+app.listen(8800, () => console.log("API on :8800"));

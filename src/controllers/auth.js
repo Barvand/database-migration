@@ -2,7 +2,7 @@
 import { db } from "../../connect.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { z } from "zod";
+import { RegisterSchema, LoginSchema} from "../validation/schemas.js";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -14,28 +14,7 @@ const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 // Schemas
-const RegisterSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .min(3)
-    .max(30)
-    .regex(/^[a-zA-Z0-9_]+$/),
-  email: z.string().trim().toLowerCase().email(),
-  password: z
-    .string()
-    .min(8)
-    .regex(/[A-Z]/, "Need an uppercase letter")
-    .regex(/[a-z]/, "Need a lowercase letter")
-    .regex(/[0-9]/, "Need a number"),
-  name: z.string().trim().min(1).max(100),
-  role: z.enum(["employee", "admin", "accountant"]).default("employee"),
-});
 
-const LoginSchema = z.object({
-  email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(8),
-});
 
 // Helpers
 function signAccessToken(payload) {
@@ -108,7 +87,10 @@ export const login = (req, res) => {
   const q =
     "SELECT userId, username, email, password, name, role FROM users WHERE email = ? LIMIT 1";
   db.query(q, [email], (err, data) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+    console.error("❌ MySQL error in login:", err);
+    return res.status(500).json({ error: err.message || err });
+  }
     if (data.length === 0)
       return res.status(404).json({ message: "Invalid email or password" });
 
