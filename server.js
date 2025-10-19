@@ -21,8 +21,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.get("/api/health", async (_req, res) => res.json({ ok: true }));
-app.use(express.json()); 
+app.get("/api/health", async (_req, res) => res.json({ ok: true })); 
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/projects", projectRoutes);
