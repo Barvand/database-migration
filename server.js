@@ -1,4 +1,3 @@
-
 import express from "express";
 import authRoutes from "./src/routes/auth.js";
 import projectRoutes from "./src/routes/projects.js";
