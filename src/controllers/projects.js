@@ -1,5 +1,4 @@
 // controllers/projects.js
-import jwt from "jsonwebtoken";
 import { db } from "../../connect.js";
 
 // ---- GET /projects  (all projects) ----------------------------------------
