@@ -20,7 +20,7 @@ router.get("/projects/:projectId/hours-list", auth, getHoursByProject);
 router.get("/", auth, getHours);
 router.get("/:id", auth, getHourById);
 router.post("/", auth, addHour);
-router.patch("/:id", auth, updateHour);
+router.put("/:id", auth, updateHour);
 router.delete("/:id", auth, deleteHour);
 
 export default router;
