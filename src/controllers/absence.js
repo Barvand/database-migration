@@ -1,3 +1,4 @@
+import { db } from "../../connect.js";
 export const getAbsence = (req, res) => {
   const q = "SELECT * FROM absence";
 

@@ -4,6 +4,6 @@ import { getAbsence } from "../controllers/absence.js";
 
 const router = express.Router();
 
-router.get("/absence", auth, getAbsence);
+router.get("/", auth, getAbsence);
 
 export default router;
