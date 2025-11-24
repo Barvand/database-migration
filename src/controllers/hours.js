@@ -30,6 +30,7 @@ export const getHours = (req, res) => {
       h.startTime,
       h.endTime,
       h.breakMinutes,
+      h.absenceId,
       ${SQL_WORKED_EXPR_FROM_COLS} AS hoursWorked
     FROM hours h
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
@@ -52,6 +53,7 @@ export const getHourById = (req, res) => {
       h.startTime,
       h.endTime,
       h.breakMinutes,
+      h.absenceId,
       ${SQL_WORKED_EXPR_FROM_COLS} AS hoursWorked
     FROM hours h
     WHERE h.idHours = ?;
@@ -82,23 +84,52 @@ function toMySQLDateTime(iso) {
 
 // ---- POST /hours  (create) -------------------------------------------------
 export const addHour = (req, res) => {
-  const { userId, projectsId, startTime, endTime, breakMinutes = 0 } = req.body;
+  const { userId, projectsId, startTime, endTime, breakMinutes, absenceId } =
+    req.body;
 
-  if (!userId || !projectsId || !startTime || !endTime) {
-    return res
-      .status(400)
-      .json({ message: "userId, projectsId, startTime, endTime are required" });
+  if (!userId || !startTime || !endTime) {
+    return res.status(400).json({
+      message: "userId, startTime, endTime are required",
+    });
   }
 
+  // Determine which type of entry this is
+  const hasProject =
+    projectsId !== null && projectsId !== undefined && projectsId !== "";
+  const hasAbsence =
+    absenceId !== null && absenceId !== undefined && absenceId !== "";
+
+  // Must be exactly one
+  if (hasProject === hasAbsence) {
+    return res.status(400).json({
+      message: "You must provide either projectsId OR absenceId — not both.",
+    });
+  }
+
+  // Convert ISO -> MySQL datetime
   const startSQL = toMySQLDateTime(startTime);
   const endSQL = toMySQLDateTime(endTime);
 
-  // ⬇️ Insert ONLY existing columns
   const q = `
-    INSERT INTO hours (userId, projectsId, startTime, endTime, breakMinutes)
-    VALUES (?, ?, ?, ?, ?);
-  `;
-  const vals = [userId, projectsId, startSQL, endSQL, breakMinutes];
+  INSERT INTO hours (
+    userId,
+    projectsId,
+    absenceId,
+    startTime,
+    endTime,
+    breakMinutes
+  )
+  VALUES (?, ?, ?, ?, ?, ?);
+`;
+
+  const vals = [
+    userId,
+    hasProject ? projectsId : null,
+    hasAbsence ? absenceId : null,
+    startSQL,
+    endSQL,
+    breakMinutes ?? 0,
+  ];
 
   db.query(q, vals, (err, result) => {
     if (err) {
@@ -106,19 +137,21 @@ export const addHour = (req, res) => {
       return res.status(500).json({ message: "Error creating hour" });
     }
 
-    // Return the new row + computed hoursWorked as an alias
     const selectQ = `
       SELECT
         h.idHours,
         h.userId,
         h.projectsId,
+        h.absenceId,
         h.startTime,
         h.endTime,
         h.breakMinutes,
-        (TIMESTAMPDIFF(MINUTE, h.startTime, h.endTime) - COALESCE(h.breakMinutes, 0)) / 60 AS hoursWorked
+        (TIMESTAMPDIFF(MINUTE, h.startTime, h.endTime) -
+         COALESCE(h.breakMinutes, 0)) / 60 AS hoursWorked
       FROM hours h
       WHERE h.idHours = ?;
     `;
+
     db.query(selectQ, [result.insertId], (err2, rows) => {
       if (err2) return res.status(201).json({ idHours: result.insertId });
       return res.status(201).json(rows[0]);
@@ -126,7 +159,7 @@ export const addHour = (req, res) => {
   });
 };
 
-// ---- PATCH /hours/:id  (partial update) -----------------------------------
+// ---- PUT /hours/:id  (partial update) -----------------------------------
 export const updateHour = (req, res) => {
   const allowed = [
     "startTime",
@@ -134,10 +167,13 @@ export const updateHour = (req, res) => {
     "breakMinutes",
     "userId",
     "projectsId",
+    "absenceId",
   ];
+
   const sets = [];
   const vals = [];
 
+  // Build dynamic SET clause
   for (const k of allowed) {
     if (req.body[k] !== undefined) {
       const v =
@@ -147,6 +183,17 @@ export const updateHour = (req, res) => {
       sets.push(`\`${k}\` = ?`);
       vals.push(v);
     }
+  }
+
+  // Enforce rule: must choose EITHER project OR absence
+  const { projectsId, absenceId } = req.body;
+  if (
+    (projectsId && absenceId) ||
+    (projectsId === null && absenceId === null)
+  ) {
+    return res.status(400).json({
+      message: "You must update either projectsId OR absenceId — not both.",
+    });
   }
 
   if (sets.length === 0)
@@ -168,6 +215,7 @@ export const updateHour = (req, res) => {
         h.idHours,
         h.userId,
         h.projectsId,
+        h.absenceId,
         h.startTime,
         h.endTime,
         h.breakMinutes,

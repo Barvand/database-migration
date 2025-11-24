@@ -3,6 +3,7 @@ import authRoutes from "./src/routes/auth.js";
 import projectRoutes from "./src/routes/projects.js";
 import hoursRoutes from "./src/routes/hours.js";
 import reportsRoutes from "./src/routes/reports.js";
+import absenceRoutes from "./src/routes/absence.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
@@ -12,7 +13,7 @@ app.use(
   cors({
     origin: [
       "https://manhours.netlify.app",
-      'https://totaltiming.app', 
+      "https://totaltiming.app",
       "http://localhost:5173",
       "http://localhost:3000",
     ],
@@ -21,11 +22,12 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.get("/api/health", async (_req, res) => res.json({ ok: true })); 
+app.get("/api/health", async (_req, res) => res.json({ ok: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/projects", projectRoutes);
 app.use("/api/auth/", authRoutes);
 app.use("/api/hours", hoursRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/absence", absenceRoutes);
 app.listen(8800, () => console.log("API on :8800"));
