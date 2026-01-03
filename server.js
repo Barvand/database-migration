@@ -6,6 +6,7 @@ import reportsRoutes from "./src/routes/reports.js";
 import absenceRoutes from "./src/routes/absence.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import usersRoutes from "./src/routes/users.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -30,4 +31,6 @@ app.use("/api/auth/", authRoutes);
 app.use("/api/hours", hoursRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/absence", absenceRoutes);
+app.use("/api/users", usersRoutes);
+
 app.listen(8800, () => console.log("API on :8800"));
