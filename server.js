@@ -10,13 +10,17 @@ import usersRoutes from "./src/routes/users.js";
 
 const app = express();
 app.set("trust proxy", 1);
-const IS_PROD = process.env.NODE_ENV === "production";
+const allowedOrigins = ["http://localhost:5173", "https://totaltiming.app"];
 
 app.use(
   cors({
-    origin: IS_PROD
-      ? "https://totaltiming.app" // ✅ Match your frontend domain
-      : "http://localhost:5173", // ✅ Your local dev
+    origin: (origin, callback) => {
+      // allow non-browser tools (no origin) and allowed origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
