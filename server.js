@@ -10,16 +10,15 @@ import usersRoutes from "./src/routes/users.js";
 
 const app = express();
 app.set("trust proxy", 1);
+const IS_PROD = process.env.NODE_ENV === "production";
+
 app.use(
   cors({
-    origin: [
-      "https://manhours.netlify.app",
-      "https://totaltiming.app",
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: IS_PROD
+      ? "https://totaltiming.app" // ✅ Match your frontend domain
+      : "http://localhost:5173", // ✅ Your local dev
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );

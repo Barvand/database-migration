@@ -25,10 +25,11 @@ function signRefreshToken(payload) {
 function setRefreshCookie(res, refreshToken) {
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
-    secure: true, // true in prod (HTTPS required)
-    sameSite: "none", // use "none" only if cross-site
-    path: "/api/auth/refresh", // restrict path to auth routes
+    secure: true,
+    sameSite: "none",
+    path: "/",
     maxAge: REFRESH_TTL_MS,
+    domain: IS_PROD ? ".totaltiming.app" : undefined, // ✅ Shares across subdomains
   });
 }
 
@@ -152,7 +153,7 @@ export const logout = (req, res) => {
     httpOnly: true,
     secure: true,
     sameSite: "none",
-    path: "/api/auth/refresh",
+    path: "/", // ✅ Must match the path in setRefreshCookie
   });
   return res.status(200).json({ message: "Logged out" });
 };
