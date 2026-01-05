@@ -2,19 +2,18 @@
 import { db } from "../../connect.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { RegisterSchema, LoginSchema} from "../validation/schemas.js";
+import { RegisterSchema, LoginSchema } from "../validation/schemas.js";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
 // Lifetimes
-const ACCESS_TTL = "15m"; // short-lived
+const ACCESS_TTL = "15m";
 const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days cookie
 const REFRESH_TTL_JWT = "7d"; // match cookie lifetime
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 // Schemas
-
 
 // Helpers
 function signAccessToken(payload) {
@@ -27,8 +26,8 @@ function setRefreshCookie(res, refreshToken) {
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
     secure: true, // true in prod (HTTPS required)
-    sameSite: 'none', // use "none" only if cross-site
-    path: "api/auth/refresh", // restrict path to auth routes
+    sameSite: "none", // use "none" only if cross-site
+    path: "/api/auth/refresh", // restrict path to auth routes
     maxAge: REFRESH_TTL_MS,
   });
 }
@@ -88,9 +87,9 @@ export const login = (req, res) => {
     "SELECT userId, username, email, password, name, role FROM users WHERE email = ? LIMIT 1";
   db.query(q, [email], (err, data) => {
     if (err) {
-    console.error("❌ MySQL error in login:", err);
-    return res.status(500).json({ error: err.message || err });
-  }
+      console.error("❌ MySQL error in login:", err);
+      return res.status(500).json({ error: err.message || err });
+    }
     if (data.length === 0)
       return res.status(404).json({ message: "Invalid email or password" });
 
@@ -120,19 +119,26 @@ export const login = (req, res) => {
   });
 };
 
-// REFRESH → mints new access token using refresh cookie
 export const refresh = (req, res) => {
   const token = req.cookies?.refresh_token;
   if (!token) return res.status(401).json({ message: "Missing refresh token" });
 
   try {
     const payload = jwt.verify(token, JWT_REFRESH_SECRET);
-    // Optional: check token revocation/rotation store here
-    const accessToken = signAccessToken({
-      sub: payload.sub,
-      role: payload.role,
+
+    // Query DB to get current role
+    const q = "SELECT role FROM users WHERE userId = ? LIMIT 1";
+    db.query(q, [payload.sub], (err, data) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (data.length === 0)
+        return res.status(401).json({ message: "User not found" });
+
+      const accessToken = signAccessToken({
+        sub: payload.sub,
+        role: data[0].role,
+      });
+      return res.status(200).json({ accessToken });
     });
-    return res.status(200).json({ accessToken });
   } catch (e) {
     return res
       .status(401)
@@ -144,9 +150,9 @@ export const refresh = (req, res) => {
 export const logout = (req, res) => {
   res.clearCookie("refresh_token", {
     httpOnly: true,
-    secure: true, 
-    sameSite:"none",
-    path: "api/auth/refresh",
+    secure: true,
+    sameSite: "none",
+    path: "/api/auth/refresh",
   });
   return res.status(200).json({ message: "Logged out" });
 };
