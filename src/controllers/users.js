@@ -2,7 +2,7 @@ import { db } from "../../connect.js";
 
 export const getUsers = (req, res) => {
   const q = `
-    SELECT userId, name, email, role
+    SELECT userId, name, role
     FROM users
     ORDER BY name ASC;
   `;

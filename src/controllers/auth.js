@@ -45,24 +45,21 @@ export const register = (req, res) => {
       .status(400)
       .json({ message: "Validation failed", errors: issues });
   }
-  const { username, email, password, name, role } = parsed.data;
+  const { password, name, role } = parsed.data;
 
-  // Ensure DB has UNIQUE(username), UNIQUE(email)
-  const qCheck = "SELECT 1 FROM users WHERE username = ? OR email = ? LIMIT 1";
-  db.query(qCheck, [username, email], (err, data) => {
+  // Check if user with same name already exists
+  const qCheck = "SELECT 1 FROM users WHERE name = ? LIMIT 1";
+  db.query(qCheck, [name], (err, data) => {
     if (err) return res.status(500).json({ error: err.message });
     if (data.length)
       return res
         .status(409)
-        .json({ message: "Username or email already exists" });
+        .json({ message: "User with this name already exists" });
 
     const salt = bcrypt.genSaltSync(10);
     const hashPassword = bcrypt.hashSync(password, salt);
-
-    const qInsert =
-      "INSERT INTO users(`username`,`email`,`password`,`name`,`role`) VALUES (?)";
-    const values = [username, email, hashPassword, name, role];
-
+    const qInsert = "INSERT INTO users (`name`, `password`, `role`) VALUES (?)";
+    const values = [name, hashPassword, role];
     db.query(qInsert, [values], (err2) => {
       if (err2) return res.status(500).json({ error: err2.message });
       return res.status(201).json({ message: "User created" });
@@ -82,22 +79,21 @@ export const login = (req, res) => {
       .status(400)
       .json({ message: "Validation failed", errors: issues });
   }
-  const { email, password } = parsed.data;
+  const { name, password } = parsed.data;
 
   const q =
-    "SELECT userId, username, email, password, name, role FROM users WHERE email = ? LIMIT 1";
-  db.query(q, [email], (err, data) => {
+    "SELECT userId, password, name, role FROM users WHERE name = ? LIMIT 1";
+  db.query(q, [name], (err, data) => {
     if (err) {
       console.error("❌ MySQL error in login:", err);
       return res.status(500).json({ error: err.message || err });
     }
     if (data.length === 0)
-      return res.status(404).json({ message: "Invalid email or password" });
-
+      return res.status(404).json({ message: "Invalid name or password" });
     const user = data[0];
     const ok = bcrypt.compareSync(password, user.password);
     if (!ok)
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid name or password" });
 
     // prepare safe user
     const { password: _pw, ...safeUser } = user;
@@ -169,8 +165,7 @@ export const me = (req, res) => {
     const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
     // Load the user if you need fresh DB fields; or return claims only:
-    const q =
-      "SELECT userId, username, email, name, role FROM users WHERE userId = ? LIMIT 1";
+    const q = "SELECT userId, name, role FROM users WHERE userId = ? LIMIT 1";
     db.query(q, [payload.sub], (err, data) => {
       if (err) return res.status(500).json({ error: err.message });
       if (data.length === 0)

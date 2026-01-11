@@ -25,7 +25,7 @@ export const hoursByUserProject = (req, res) => {
   const q = `
     SELECT
       h.userId,
-      u.name  AS userName,
+      u.name  AS name,
       h.projectsId AS projectId,
       p.name  AS projectName,
       ROUND(SUM(${HOURS_EXPR}), 2) AS totalHours
@@ -34,7 +34,7 @@ export const hoursByUserProject = (req, res) => {
     JOIN projects p ON p.id     = h.projectsId
     ${where}
     GROUP BY h.userId, h.projectsId
-    ORDER BY userName, projectName;
+    ORDER BY name, projectName;
   `;
 
   db.query(q, vals, (err, rows) => {
@@ -48,12 +48,12 @@ export const hoursByUser = (req, res) => {
   const q = `
     SELECT
       h.userId,
-      u.name AS userName,
+      u.name AS name,
       ROUND(SUM(${HOURS_EXPR}), 2) AS totalHours
     FROM hours h
     JOIN users u ON u.userId = h.userId
     GROUP BY h.userId
-    ORDER BY userName;
+    ORDER BY name;
   `;
 
   db.query(q, (err, rows) => {
@@ -99,7 +99,7 @@ export const projectHoursDetail = (req, res) => {
     SELECT
       h.idHours,
       h.userId,
-      u.name       AS userName,
+      u.name       AS name,
       h.projectsId AS projectId,
       p.name       AS projectName,
       h.startTime,
@@ -133,14 +133,14 @@ export const projectHoursByUser = (req, res) => {
   const q = `
     SELECT
       h.userId,
-      u.name AS userName,
+      u.name AS name,
       ROUND(SUM(${HOURS_EXPR}), 2) AS totalHours
     FROM hours h
     JOIN users u ON u.userId = h.userId
     WHERE h.projectsId = ?
     ${where}
     GROUP BY h.userId
-    ORDER BY userName;
+    ORDER BY name;
   `;
 
   db.query(q, [projectId, ...vals], (err, rows) => {
