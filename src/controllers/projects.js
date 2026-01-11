@@ -42,7 +42,7 @@ export const addProject = (req, res) => {
   const {
     name,
     description = null,
-    status = "Active",
+    status = "active", // keep consistent with frontend
     totalHours = null,
     startDate = null,
     endDate = null,
@@ -50,12 +50,27 @@ export const addProject = (req, res) => {
   } = req.body;
 
   // Basic validation
-  if (!name) return res.status(400).json({ message: "Name is required" });
+  if (!name?.trim()) {
+    return res.status(400).json({
+      code: "VALIDATION_ERROR",
+      field: "name",
+      message: "Name is required",
+    });
+  }
+
+  if (!projectCode?.toString().trim()) {
+    return res.status(400).json({
+      code: "VALIDATION_ERROR",
+      field: "projectCode",
+      message: "Project code is required",
+    });
+  }
 
   const q = `
     INSERT INTO projects (\`name\`, \`description\`, \`status\`, \`totalHours\`, \`startDate\`, \`endDate\`, \`projectCode\`)
     VALUES (?, ?, ?, ?, ?, ?, ?);
   `;
+
   const values = [
     name,
     description,
@@ -66,14 +81,37 @@ export const addProject = (req, res) => {
     projectCode,
   ];
 
-  db.query(q, values, (err) => {
+  db.query(q, values, (err, result) => {
     if (err) {
       console.error("Database error:", err);
-      return res
-        .status(500)
-        .json({ message: "Error creating project, please fill in all fields" });
+
+      // ✅ Duplicate key (unique constraint)
+      if (err.code === "ER_DUP_ENTRY") {
+        // Optional: try to figure out which field caused it
+        const msg = String(err.sqlMessage || "");
+        const isProjectCode = msg.includes("projectCode");
+
+        return res.status(409).json({
+          code: isProjectCode ? "PROJECT_CODE_EXISTS" : "DUPLICATE_ENTRY",
+          field: isProjectCode ? "projectCode" : undefined,
+          message: isProjectCode
+            ? "Project code already exists"
+            : "Duplicate value already exists",
+        });
+      }
+
+      // ✅ Other DB errors
+      return res.status(500).json({
+        code: "DB_ERROR",
+        message: "Error creating project",
+      });
     }
-    return res.status(201).json({ message: "Project has been created" });
+
+    // Better: return created record id too
+    return res.status(201).json({
+      message: "Project has been created",
+      id: result.insertId,
+    });
   });
 };
 
