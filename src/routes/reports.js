@@ -4,8 +4,10 @@ import {
   hoursByUserProject,
   hoursByUser,
   hoursByProject,
-  projectHoursDetail, // NEW
-  projectHoursByUser, // NEW
+  projectHoursDetail,
+  projectHoursByUser,
+  absenceHoursDetail,
+  absenceHoursByUser,
 } from "../controllers/reports.js";
 
 const router = express.Router();
@@ -19,5 +21,7 @@ router.get("/hours/by-project", auth, hoursByProject);
 // Accept ?from=YYYY-MM-DD&to=YYYY-MM-DD (optional), and optional ?userId=
 router.get("/projects/:projectId/hours", auth, projectHoursDetail);
 router.get("/projects/:projectId/hours/by-user", auth, projectHoursByUser);
+router.get("/absence/:absenceId/hours", auth, absenceHoursDetail);
+router.get("/absence/:absenceId/hours-by-user", auth, absenceHoursByUser);
 
 export default router;

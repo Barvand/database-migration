@@ -24,7 +24,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 app.get("/api/health", async (_req, res) => res.json({ ok: true }));
 app.use(express.json());
@@ -35,5 +35,5 @@ app.use("/api/hours", hoursRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/absence", absenceRoutes);
 app.use("/api/users", usersRoutes);
-
+app.use("/api/absence", absenceRoutes);
 app.listen(8800, () => console.log("API on :8800"));

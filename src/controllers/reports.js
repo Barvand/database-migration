@@ -18,6 +18,25 @@ function buildDateWhere(from, to) {
   return { where: where.length ? `WHERE ${where.join(" AND ")}` : "", vals };
 }
 
+function buildDateAnd(from, to) {
+  const parts = [];
+  const vals = [];
+
+  if (from) {
+    parts.push("h.startTime >= ?");
+    vals.push(`${from} 00:00:00`);
+  }
+  if (to) {
+    parts.push("h.startTime < DATE_ADD(?, INTERVAL 1 DAY)");
+    vals.push(to);
+  }
+
+  return {
+    sql: parts.length ? `AND ${parts.join(" AND ")}` : "",
+    vals,
+  };
+}
+
 export const hoursByUserProject = (req, res) => {
   const { from, to } = req.query;
   const { where, vals } = buildDateWhere(from, to);
@@ -144,6 +163,70 @@ export const projectHoursByUser = (req, res) => {
   `;
 
   db.query(q, [projectId, ...vals], (err, rows) => {
+    if (err)
+      return res.status(500).json({ message: "Error generating report" });
+    res.json(rows);
+  });
+};
+
+export const absenceHoursDetail = (req, res) => {
+  const { absenceId } = req.params;
+  const { from, to, userId } = req.query;
+  console.log("absence param:", req.params);
+
+  const date = buildDateAnd(from, to);
+  const userFilter = userId ? "AND h.userId = ?" : "";
+  const userVals = userId ? [userId] : [];
+
+  const q = `
+    SELECT
+      h.idHours,
+      h.userId,
+      u.name        AS name,
+      h.absenceId   AS absenceId,
+      a.name        AS absenceName,
+      a.absenceCode AS absenceCode,
+      h.startTime,
+      h.endTime,
+      h.breakMinutes,
+      ROUND(${HOURS_EXPR}, 2) AS hoursWorked,
+      h.note
+    FROM hours h
+    JOIN users u   ON u.userId = h.userId
+    JOIN absence a ON a.id     = h.absenceId
+    WHERE h.absenceId = ?
+    ${date.sql}
+    ${userFilter}
+    ORDER BY h.startTime DESC, h.idHours DESC;
+  `;
+
+  db.query(q, [absenceId, ...date.vals, ...userVals], (err, rows) => {
+    if (err)
+      return res.status(500).json({ message: "Error generating report" });
+    res.json(rows);
+  });
+};
+export const absenceHoursByUser = (req, res) => {
+  const { absenceId } = req.params;
+  const { from, to } = req.query;
+
+  const date = buildDateAnd(from, to);
+
+  const q = `
+    SELECT
+      h.userId,
+      u.name AS name,
+      ROUND(SUM(${HOURS_EXPR}), 2) AS totalHours
+    FROM hours h
+    JOIN users u   ON u.userId = h.userId
+    JOIN absence a ON a.id     = h.absenceId
+    WHERE a.absenceCode = ?
+    ${date.sql}
+    GROUP BY h.userId
+    ORDER BY name;
+  `;
+
+  db.query(q, [absenceId, ...date.vals], (err, rows) => {
     if (err)
       return res.status(500).json({ message: "Error generating report" });
     res.json(rows);
