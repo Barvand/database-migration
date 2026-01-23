@@ -212,7 +212,11 @@ export const getProjectImages = (req, res) => {
       return res.status(500).json({ message: "Error fetching images" });
     }
 
-    const BASE_URL = process.env.API_URL || "api.totaltiming.app";
+    const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://api.totaltiming.app"
+    : "http://localhost:8800";
+
 
     res.status(200).json(
       rows.map((img) => ({
