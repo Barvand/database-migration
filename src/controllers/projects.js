@@ -37,12 +37,13 @@ export const GetProjectById = (req, res) => {
     return res.status(200).json(rows[0]);
   });
 };
+
 // ---- POST /projects  (create) ---------------------------------------------
 export const addProject = (req, res) => {
   const {
     name,
     description = null,
-    status = "active", // keep consistent with frontend
+    status = "active",
     totalHours = null,
     startDate = null,
     endDate = null,
@@ -96,7 +97,7 @@ export const addProject = (req, res) => {
           field: isProjectCode ? "projectCode" : undefined,
           message: isProjectCode
             ? "Project code already exists"
-            : "Duplicate value already exists",
+            : "Det er allerede et prosjekt med denne verdien.",
         });
       }
 
@@ -156,7 +157,7 @@ export const updateProject = (req, res) => {
           return res.status(200).json({ message: "Project updated" });
         }
         return res.status(200).json(rows[0]);
-      }
+      },
     );
   });
 };
@@ -187,5 +188,39 @@ export const getActiveProjects = (req, res) => {
         .status(500)
         .json({ message: "Error fetching active projects" });
     return res.status(200).json(rows);
+  });
+};
+
+// ---- GET /projects/:id/images ---------------------------------------------
+export const getProjectImages = (req, res) => {
+  const { projectCode } = req.params;
+
+  const q = `
+    SELECT
+      pi.id,
+      pi.filename,
+      pi.createdAt
+    FROM project_images pi
+    JOIN projects p ON p.id = pi.projectId
+    WHERE p.projectCode = ?
+    ORDER BY pi.createdAt DESC;
+  `;
+
+  db.query(q, [projectCode], (err, rows) => {
+    if (err) {
+      console.error("DB error:", err);
+      return res.status(500).json({ message: "Error fetching images" });
+    }
+
+    const BASE_URL = process.env.API_URL || "http://localhost:8800";
+
+    res.status(200).json(
+      rows.map((img) => ({
+        id: img.id,
+        filename: img.filename,
+        createdAt: img.createdAt,
+        url: `${BASE_URL}/uploads/${img.filename}`,
+      })),
+    );
   });
 };

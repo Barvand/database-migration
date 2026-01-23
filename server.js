@@ -7,6 +7,8 @@ import absenceRoutes from "./src/routes/absence.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import usersRoutes from "./src/routes/users.js";
+import uploadRoutes from "./src/routes/upload.js";
+import path from "path";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -36,4 +38,8 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/absence", absenceRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/absence", absenceRoutes);
+app.use("/api", uploadRoutes);
 app.listen(8800, () => console.log("API on :8800"));
+
+// Serve uploaded files
+app.use("/uploads", express.static(path.resolve("uploads")));
