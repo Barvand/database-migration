@@ -9,7 +9,7 @@ import cookieParser from "cookie-parser";
 import usersRoutes from "./src/routes/users.js";
 import uploadRoutes from "./src/routes/upload.js";
 import path from "path";
-
+import errorHandler from "./src/middleware/errorHandler.js"
 const app = express();
 app.set("trust proxy", 1);
 const allowedOrigins = ["http://localhost:5173", "https://totaltiming.app"];
@@ -43,3 +43,4 @@ app.listen(8800, () => console.log("API on :8800"));
 
 // Serve uploaded files
 app.use("/uploads", express.static(path.resolve("uploads")));
+app.use(errorHandler);
