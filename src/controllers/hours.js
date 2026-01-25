@@ -102,7 +102,7 @@ export const addHour = (req, res) => {
   // Must be exactly one
   if (hasProject === hasAbsence) {
     return res.status(400).json({
-      message: "You must provide either projectsId OR absenceId — not both.",
+      message: "Du må velge enten et prosjekt eller fravær.",
     });
   }
 
