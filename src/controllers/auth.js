@@ -67,11 +67,7 @@ export const register = (req, res) => {
 
 // LOGIN → returns access token in JSON + sets refresh cookie
 export const login = async (req, res) => {
-  const ip =
-    req.headers["cf-connecting-ip"] ||
-    req.headers["x-forwarded-for"]?.split(",")[0] ||
-    req.socket.remoteAddress ||
-    "unknown";
+  const ip = req.ip;
   const sendDiscord = async (status, reason = "") => {
     try {
       await fetch(process.env.DISCORD_WEBHOOK, {
