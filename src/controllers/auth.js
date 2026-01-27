@@ -68,38 +68,100 @@ export const register = (req, res) => {
 };
 
 // LOGIN → returns access token in JSON + sets refresh cookie
-export const login = (req, res) => {
+export const login = async (req, res) => {
+
+  const ip =
+    req.headers["cf-connecting-ip"] ||
+    req.headers["x-forwarded-for"]?.split(",")[0] ||
+    req.socket.remoteAddress ||
+    "unknown";
+
+  const email = req.body?.email || "unknown";
+
+  const sendDiscord = async (status, reason = "") => {
+    try {
+      await fetch(process.env.DISCORD_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content:
+            `🔐 **Login Attempt**\n` +
+            `IP: ${ip}\n` +
+            `User: ${email}\n` +
+            `Status: ${status}\n` +
+            (reason ? `Reason: ${reason}` : "")
+        })
+      });
+    } catch (e) {
+      console.error("Discord webhook failed:", e);
+    }
+  };
+
+  // ================= Validation =================
+
   const parsed = LoginSchema.safeParse(req.body);
+
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((i) => ({
-      field: i.path.join("."),
-      message: i.message,
-    }));
-    return res
-      .status(400)
-      .json({ message: "Validation failed", errors: issues });
+
+    await sendDiscord("❌ Failed", "Validation error");
+
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: parsed.error.issues,
+    });
   }
+
   const { name, password } = parsed.data;
+
+  // ================= DB =================
 
   const q =
     "SELECT userId, password, name, role FROM users WHERE name = ? LIMIT 1";
-  db.query(q, [name], (err, data) => {
-    if (err) {
-      console.error("❌ MySQL error in login:", err);
-      return res.status(500).json({ error: err.message || err });
-    }
-    if (data.length === 0)
-      return res.status(404).json({ message: "Invalid name or password" });
-    const user = data[0];
-    const ok = bcrypt.compareSync(password, user.password);
-    if (!ok)
-      return res.status(400).json({ message: "Invalid name or password" });
 
-    // prepare safe user
+  db.query(q, [name], async (err, data) => {
+
+    if (err) {
+
+      console.error("❌ MySQL error:", err);
+
+      await sendDiscord("❌ Failed", "Database error");
+
+      return res.status(500).json({ error: "Server error" });
+    }
+
+    if (!data.length) {
+
+      await sendDiscord("❌ Failed", "User not found");
+
+      return res.status(401).json({
+        message: "Invalid name or password"
+      });
+    }
+
+    const user = data[0];
+
+    const ok = bcrypt.compareSync(password, user.password);
+
+    if (!ok) {
+
+      await sendDiscord("❌ Failed", "Wrong password");
+
+      return res.status(401).json({
+        message: "Invalid name or password"
+      });
+    }
+
+    // ================= Success =================
+
+    await sendDiscord("✅ Success");
+
     const { password: _pw, ...safeUser } = user;
 
-    // claims you actually need in access token
-    const accessToken = signAccessToken({ sub: user.userId, role: user.role });
+    const accessToken = signAccessToken({
+      sub: user.userId,
+      role: user.role
+    });
+
     const refreshToken = signRefreshToken({
       sub: user.userId,
       token_use: "refresh",
@@ -107,7 +169,6 @@ export const login = (req, res) => {
 
     setRefreshCookie(res, refreshToken);
 
-    // FRONTEND stores access token in memory and uses Authorization header
     return res.status(200).json({
       message: "Login successful",
       accessToken,
@@ -115,6 +176,7 @@ export const login = (req, res) => {
     });
   });
 };
+
 
 export const refresh = (req, res) => {
   const token = req.cookies?.refresh_token;
