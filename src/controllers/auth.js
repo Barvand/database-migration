@@ -3,7 +3,6 @@ import { db } from "../../connect.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { RegisterSchema, LoginSchema } from "../validation/schemas.js";
-
 const IS_PROD = process.env.NODE_ENV === "production";
 
 // Lifetimes
@@ -32,7 +31,6 @@ function setRefreshCookie(res, refreshToken) {
     domain: IS_PROD ? ".totaltiming.app" : undefined, // ✅ Shares across subdomains
   });
 }
-
 // REGISTER
 export const register = (req, res) => {
   const parsed = RegisterSchema.safeParse(req.body);
@@ -69,15 +67,11 @@ export const register = (req, res) => {
 
 // LOGIN → returns access token in JSON + sets refresh cookie
 export const login = async (req, res) => {
-
   const ip =
     req.headers["cf-connecting-ip"] ||
     req.headers["x-forwarded-for"]?.split(",")[0] ||
     req.socket.remoteAddress ||
     "unknown";
-
-  const email = req.body?.email || "unknown";
-
   const sendDiscord = async (status, reason = "") => {
     try {
       await fetch(process.env.DISCORD_WEBHOOK, {
@@ -87,10 +81,10 @@ export const login = async (req, res) => {
           content:
             `🔐 **Login Attempt**\n` +
             `IP: ${ip}\n` +
-            `User: ${email}\n` +
+            `User: ${name}\n` +
             `Status: ${status}\n` +
-            (reason ? `Reason: ${reason}` : "")
-        })
+            (reason ? `Reason: ${reason}` : ""),
+        }),
       });
     } catch (e) {
       console.error("Discord webhook failed:", e);
@@ -102,7 +96,6 @@ export const login = async (req, res) => {
   const parsed = LoginSchema.safeParse(req.body);
 
   if (!parsed.success) {
-
     await sendDiscord("❌ Failed", "Validation error");
 
     return res.status(400).json({
@@ -119,9 +112,7 @@ export const login = async (req, res) => {
     "SELECT userId, password, name, role FROM users WHERE name = ? LIMIT 1";
 
   db.query(q, [name], async (err, data) => {
-
     if (err) {
-
       console.error("❌ MySQL error:", err);
 
       await sendDiscord("❌ Failed", "Database error");
@@ -130,11 +121,10 @@ export const login = async (req, res) => {
     }
 
     if (!data.length) {
-
       await sendDiscord("❌ Failed", "User not found");
 
       return res.status(401).json({
-        message: "Invalid name or password"
+        message: "Invalid name or password",
       });
     }
 
@@ -143,11 +133,10 @@ export const login = async (req, res) => {
     const ok = bcrypt.compareSync(password, user.password);
 
     if (!ok) {
-
       await sendDiscord("❌ Failed", "Wrong password");
 
       return res.status(401).json({
-        message: "Invalid name or password"
+        message: "Invalid name or password",
       });
     }
 
@@ -159,7 +148,7 @@ export const login = async (req, res) => {
 
     const accessToken = signAccessToken({
       sub: user.userId,
-      role: user.role
+      role: user.role,
     });
 
     const refreshToken = signRefreshToken({
@@ -176,7 +165,6 @@ export const login = async (req, res) => {
     });
   });
 };
-
 
 export const refresh = (req, res) => {
   const token = req.cookies?.refresh_token;
