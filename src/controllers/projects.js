@@ -199,7 +199,8 @@ export const getProjectImages = (req, res) => {
     SELECT
       pi.id,
       pi.filename,
-      pi.createdAt
+      pi.createdAt,
+      pi.uploadedBy
     FROM project_images pi
     JOIN projects p ON p.id = pi.projectId
     WHERE p.projectCode = ?
@@ -212,9 +213,7 @@ export const getProjectImages = (req, res) => {
       return res.status(500).json({ message: "Error fetching images" });
     }
 
-    const BASE_URL = "https://api.totaltiming.app"
-
-
+    const BASE_URL = "https://api.totaltiming.app";
 
     res.status(200).json(
       rows.map((img) => ({
@@ -222,6 +221,7 @@ export const getProjectImages = (req, res) => {
         filename: img.filename,
         createdAt: img.createdAt,
         url: `${BASE_URL}/uploads/${img.filename}`,
+        uploadedBy: img.uploadedBy,
       })),
     );
   });
